@@ -1,0 +1,184 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+
+package DAO;
+
+import Conexao.Conexao;
+import Controller.FuncionarioController;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Vector;
+import javax.swing.JOptionPane;
+import javax.swing.JTable;
+import javax.swing.table.DefaultTableModel;
+
+/**
+ *
+ * @author TécIfon
+ */
+public class FuncionarioDAO {
+    private Connection con;
+     Connection conn = null;
+    PreparedStatement statement = null;
+    ResultSet res = null;
+    
+    public FuncionarioDAO() throws SQLException{
+        this.con = Conexao.conexaoMySql();
+    }
+    
+    public DefaultTableModel getnPrintAllData(Vector columnNames){
+        String name, supplier, id;
+                    List<Object> lstObjeto = new ArrayList<>();
+                            Vector v = new Vector();
+DefaultTableModel dtm = new DefaultTableModel();
+        try{
+            String sql = "select f.idFuncionario,f.nome,f.rg,f.cpf,f.dataNascimento, f.idTipo," +
+                    "f.idTelefone from TbFuncionario f left join tbtelefone t " + 
+                    "on f.idTelefone = t.idTelefone ";
+        
+//           String sql = "select * from TbFuncionario ";
+        
+        PreparedStatement statement1 = con.prepareStatement(sql);
+           ResultSet res1 = statement1.executeQuery();
+            for(Object columnName : columnNames){
+   dtm.addColumn(columnName);
+}
+
+//            testResultSet(res);
+//            ResultSetMetaData meta = res.getMetaData();
+          ResultSetMetaData meta = res1.getMetaData();
+            int ColumnsnumberOf = meta.getColumnCount();
+            while (res1.next())
+            {
+                Object [] rowData = new Object[ColumnsnumberOf];
+                for (int i = 0; i < rowData.length; ++i)
+                {
+                    rowData[i] = res1.getObject(i+1);
+                }
+                dtm.addRow(rowData);
+            }
+//            jTable1.setModel(dtm);
+            dtm.fireTableDataChanged();
+            //////////////////////////
+
+        }
+        catch(Exception e){
+            System.err.println(e);
+            e.printStackTrace();
+        }
+////        finally{
+////            try{
+////                res1.close();
+////                statement1.close();
+////                con.close();
+////            }
+//            catch(Exception e){
+//                e.printStackTrace();
+//            }
+//        }
+        return dtm;
+    }    
+
+    
+    public void CadastrarFuncionario(FuncionarioController fc) throws SQLException{
+        String sql = "insert into TbFuncionario (nome,cpf,rg,dataNascimento,idTipo, idTelefone) " +
+                "values (?,?,?,?,?,?)";
+        statement = con.prepareStatement(sql);
+        statement.setString(1,fc.getNome());
+        statement.setString(2,fc.getRg());
+        statement.setString(3,fc.getCpf());
+        statement.setString(4,fc.getDataNascimento());
+        statement.setInt(5,fc.getIdTipo());
+        statement.setInt(6,fc.getIdTelefone());
+        
+        statement.execute();
+        statement.close();
+    }
+    
+    public List<FuncionarioController> ObterLista() throws SQLException{
+        String sql = "select f.idFuncionario,f.nome,f.rg,f.cpf,f.dataNascimento, f.idTipo," +
+                    "f.idTelefone,t.telefone from TbFuncionario f inner join tbtelefone t " + 
+                    "on f.idTelefone = t.idTelefone";
+        
+//           String sql = "select * from TbFuncionario ";
+        
+         statement = con.prepareStatement(sql);
+        ResultSet rs = statement.executeQuery();
+        List<FuncionarioController> lista = new ArrayList<FuncionarioController>();
+        while(rs.next()){
+            FuncionarioController fc = new FuncionarioController();
+            fc.setIdFuncionario(rs.getInt("idFuncionario"));
+            fc.setNome(rs.getString("nome"));
+//            fc.setTelefone(rs.getString("telefone"));
+            fc.setRg(rs.getString("rg"));
+            fc.setIdTipo(rs.getInt("idTipo"));
+            fc.setIdTelefone(rs.getInt("idTelefone"));
+            fc.setCpf(rs.getString("cpf"));
+            fc.setDataNascimento(rs.getString("dataNascimento"));
+            lista.add(fc);
+        }
+        statement.close();
+        rs.close();
+        return lista;
+    }
+    
+    public List<FuncionarioController> ListarFuncionario(FuncionarioController fc) throws SQLException{
+        String sql = "select idFuncionario,nome,telefone,rg,cpf,dataNascimento ";
+               sql += "from TbFuncionario where nome like ?";
+        PreparedStatement statement = con.prepareStatement(sql);
+        statement.setString(1,"%"+fc.getNome()+"%");
+        ResultSet rs = statement.executeQuery();
+        List<FuncionarioController> lista = new ArrayList<FuncionarioController>();
+        while(rs.next()){
+            FuncionarioController fco = new FuncionarioController();
+            fco.setIdFuncionario(rs.getInt("idFuncionario"));
+            fc.setNome(rs.getString("nome"));
+//            fco.setTelefone(rs.getString("telefone"));
+            fco.setRg(rs.getString("rg"));
+            fco.setCpf(rs.getString("cpf"));
+            fco.setDataNascimento(rs.getString("dataNascimento"));
+            lista.add(fc);
+        }
+        statement.close();
+        rs.close();
+        return lista;
+    }
+    
+     public boolean PesquisarCpf(FuncionarioController pc) throws SQLException{
+    String sql ="select cpf from tbProprietario where cpf =?";
+    PreparedStatement statementt = con.prepareStatement(sql);
+    statementt.setString(1,pc.getCpf());
+    ResultSet rs = statementt.executeQuery();
+    if(!rs.next()){
+     return true;
+    }
+    else{
+    return false;
+    }
+   }
+    
+    public void AlterarFuncionario(FuncionarioController fc) throws SQLException{
+//                String sql = "insert into TbFuncionario (nome,cpf,rg,dataNascimento,idTipo, idTelefone) " +
+
+        String sql = "update TbFuncionario set nome =?,rg=?,cpf=?dataNascimento=?,idTipo=?, idTelefone=? " +
+                        "where idFuncionario = ?;";
+        PreparedStatement statement = con.prepareStatement(sql);
+         statement.setString(1,fc.getNome());
+        statement.setString(2,fc.getRg());
+        statement.setString(3,fc.getCpf());
+        statement.setString(4,fc.getDataNascimento());
+        statement.setInt(5,fc.getIdTipo());
+        statement.setInt(6,fc.getIdTelefone());
+        
+        statement.execute();
+        statement.close();
+    }
+}
